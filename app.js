@@ -164,7 +164,7 @@ app.post('/auth/github', (req, res) => {
         const userId = payload.sub
 
         // This is for the case when user logs-in with email first, and then later decides to link with github
-        UserRepository.findOne({email: profile.email}).then(existingUser => {
+        UserRepository.findOne({ github : { profile: {email: profile.email} } }).then(existingUser => {
           if (existingUser && existingUser._id != userId) {
             return res.status(409).send({ message: 'Github account ' + profile.email + " is already associated to another user" });
           }
@@ -177,6 +177,7 @@ app.post('/auth/github', (req, res) => {
             user.github = {
               profile: {
                 id: profile.id,
+                email: profile.email,
                 picture: profile.avatar_url,
                 displayName: profile.name
               },
@@ -191,11 +192,12 @@ app.post('/auth/github', (req, res) => {
       } else {
         // This is for the case when user logs-in directly using his github account
         // Step 3b. Create a new user account or return an existing one.
-        UserRepository.findOne({ email: profile.email }).then(existingUser => {
+        UserRepository.findOne({ github : { profile: {email: profile.email} } }).then(existingUser => {
           if (existingUser) {
             existingUser.github = {
               profile: {
                 id: profile.id,
+                email: profile.email,
                 picture: profile.avatar_url,
                 displayName: profile.name
               },
@@ -212,6 +214,7 @@ app.post('/auth/github', (req, res) => {
               user.github = {
                 profile: {
                   id: profile.id,
+                  email: profile.email,
                   picture: profile.avatar_url,
                   displayName: profile.name
                 },
