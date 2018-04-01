@@ -20,7 +20,7 @@ const config = require('./config');
 const app = express();
 
 app.set('port', process.env.NODE_PORT || 3000);
-app.set('host', process.env.NODE_IP || 'localhost');
+app.set('host', process.env.NODE_IP || '0.0.0.0');
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
