@@ -158,16 +158,16 @@ app.post('/auth/github', (req, res) => {
       url: userApiUrl, qs: accessToken, headers: headers, json: true 
     }, (err, response, profile) => {
       // Step 3a. Link user accounts.
-
       if (req.header('Authorization')) {
+        const token = req.header('Authorization').split(' ')[1];
+        const payload = jwt.decode(token, config.JWT_SECRET);
+        const userId = payload.sub
+
         // This is for the case when user logs-in with email first, and then later decides to link with github
-        UserRepository.findOne({github: {profile: {id: profile.id }}}).then(existingUser => {
-          if (existingUser) {
-            return res.status(409).send({ message: 'There is already a GitHub account that belongs to you' });
+        UserRepository.findOne({email: profile.email}).then(existingUser => {
+          if (existingUser && existingUser._id != userId) {
+            return res.status(409).send({ message: 'Github account ' + profile.email + " is already associated to another user" });
           }
-          const token = req.header('Authorization').split(' ')[1];
-          const payload = jwt.decode(token, config.JWT_SECRET);
-          const userId = payload.sub
 
           UserRepository.findById(userId).then(user => {
             if (!user) {
@@ -191,9 +191,17 @@ app.post('/auth/github', (req, res) => {
       } else {
         // This is for the case when user logs-in directly using his github account
         // Step 3b. Create a new user account or return an existing one.
-        UserRepository.findOne({ github: {profile: {id: profile.id}} }).then(existingUser => {
+        UserRepository.findOne({ email: profile.email }).then(existingUser => {
           if (existingUser) {
-            existingUser.github.pass = accessToken 
+            existingUser.github = {
+              profile: {
+                id: profile.id,
+                picture: profile.avatar_url,
+                displayName: profile.name
+              },
+              pass: accessToken
+            }
+
             UserRepository.save(existingUser).then(() => {
               const token = createJWT(existingUser);
               res.send({ token: token });
